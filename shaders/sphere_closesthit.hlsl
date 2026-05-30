@@ -13,6 +13,9 @@ void SphereClosestHit(inout RayPayload payload : SV_RayPayload,
         normal = -normal;
     }
 
+    // Offset origin along outward normal to prevent self-intersection in secondary rays
+    float3 offsetOrigin = hitPoint + normal * SHADOW_BIAS;
+
     GPUMaterialData mat = g_Materials[attr.materialIndex];
 
     // Initialize RNG from hit position
@@ -29,7 +32,7 @@ void SphereClosestHit(inout RayPayload payload : SV_RayPayload,
             if (dot(aoDir, normal) < 0)
                 aoDir = -aoDir;
 
-            if (isAOOccluded(hitPoint, aoDir, maxOcclusionDist)) {
+            if (isAOOccluded(offsetOrigin, aoDir, maxOcclusionDist)) {
                 ambientPercent = 1.0 - mat.ambientOcclusionPercent;
             }
         }
@@ -52,7 +55,7 @@ void SphereClosestHit(inout RayPayload payload : SV_RayPayload,
 
     if (NdotL > 0) {
         float lightDist = length(lightSamplePos - hitPoint);
-        bool illuminated = !isOccluded(hitPoint, L, lightDist);
+        bool illuminated = !isOccluded(offsetOrigin, L, lightDist);
 
         if (illuminated) {
             // Diffuse
@@ -79,7 +82,7 @@ void SphereClosestHit(inout RayPayload payload : SV_RayPayload,
         payload.hasReflection = 1;
         payload.reflectionAttenuation = mat.reflectionWeight * mat.reflectionColor;
         payload.reflectionDir = reflect(rayDir, normal);
-        payload.hitPoint = hitPoint;
+        payload.hitPoint = offsetOrigin;
     } else {
         payload.hasReflection = 0;
     }

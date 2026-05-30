@@ -99,6 +99,7 @@ float3 randomUnitVector(inout uint seed) {
 
 // ------ Constants ------
 static const float EPSILON = 1e-4;
+static const float SHADOW_BIAS = 0.05f;
 static const float PI = 3.14159265358979323846;
 static const int MAX_DEPTH = 10;
 static const float MIN_COLOR_INTENSITY = 1.0 / 256.0;
