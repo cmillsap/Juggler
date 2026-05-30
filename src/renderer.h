@@ -23,6 +23,9 @@ public:
 private:
     static constexpr uint32_t FRAME_COUNT = 2;
     static constexpr float ANIMATION_SPEED = 15.0f; // animation frames per second
+    static constexpr float ORBIT_RADIUS = 350.0f;   // world units from juggler center
+    static constexpr float ORBIT_HEIGHT = 130.0f;   // camera Y (above juggler's head ~155)
+    static constexpr float ORBIT_SPEED  = 0.4f;     // radians/sec (~full orbit every 15 sec)
 
     void createDevice();
     void createCommandQueue();
@@ -79,6 +82,7 @@ private:
 
     // Timing
     double m_animTime = 0.0;
+    double m_orbitAngle = 0.0;
     int m_lastAnimFrame = -1;
     uint32_t m_accumulatedFrames = 0;
     uint32_t m_totalFrameCount = 0;

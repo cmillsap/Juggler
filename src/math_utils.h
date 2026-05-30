@@ -63,7 +63,7 @@ struct Vec3 {
             u = { 1, 0, 0 };
             v = { 0, 0, 1 };
         } else {
-            u = { w.z, 0, -w.x };
+            u = Vec3{ w.z, 0, -w.x }.normalized();
             v = Vec3::cross(w, u);
         }
     }

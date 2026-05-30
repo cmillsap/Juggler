@@ -346,6 +346,12 @@ void Renderer::render() {
     // Update scene
     m_animation.update(m_animTime, m_scene.spheres);
 
+    // Orbit camera — reset accumulation each frame since the view changes continuously
+    m_accumulatedFrames = 0;
+    m_orbitAngle += dt * ORBIT_SPEED;
+    static const Vec3 orbitTarget = { 151.0, 100.0, -151.0 };
+    m_camera.updateOrbit(orbitTarget, m_orbitAngle, ORBIT_RADIUS, ORBIT_HEIGHT);
+
     // Begin command recording
     ThrowIfFailed(m_commandAllocator->Reset(), "Reset allocator");
     ThrowIfFailed(m_commandList->Reset(m_commandAllocator.Get(), nullptr), "Reset cmdlist");

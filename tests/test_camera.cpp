@@ -70,3 +70,75 @@ TEST_F(CameraTest, CenterPixelRay) {
     EXPECT_NEAR(d.y, -cam.w.y, 1e-9);
     EXPECT_NEAR(d.z, -cam.w.z, 1e-9);
 }
+
+// --- updateOrbit tests ---
+
+class CameraOrbitTest : public ::testing::Test {
+protected:
+    void SetUp() override {
+        cam.init(1920, 1080);
+    }
+    Camera cam;
+    const Vec3 target = { 151.0, 100.0, -151.0 };
+    const double radius = 350.0;
+    const double height = 130.0;
+};
+
+TEST_F(CameraOrbitTest, EyeAtCorrectPosition) {
+    double angle = 0.0;
+    cam.updateOrbit(target, angle, radius, height);
+    EXPECT_NEAR(cam.eye.x, target.x + radius * std::cos(angle), 1e-9);
+    EXPECT_NEAR(cam.eye.y, height, 1e-9);
+    EXPECT_NEAR(cam.eye.z, target.z + radius * std::sin(angle), 1e-9);
+}
+
+TEST_F(CameraOrbitTest, EyeAtCorrectPositionNonZeroAngle) {
+    double angle = 1.2345;
+    cam.updateOrbit(target, angle, radius, height);
+    EXPECT_NEAR(cam.eye.x, target.x + radius * std::cos(angle), 1e-9);
+    EXPECT_NEAR(cam.eye.y, height, 1e-9);
+    EXPECT_NEAR(cam.eye.z, target.z + radius * std::sin(angle), 1e-9);
+}
+
+TEST_F(CameraOrbitTest, LookAtTarget) {
+    cam.updateOrbit(target, 0.7, radius, height);
+    EXPECT_DOUBLE_EQ(cam.look.x, target.x);
+    EXPECT_DOUBLE_EQ(cam.look.y, target.y);
+    EXPECT_DOUBLE_EQ(cam.look.z, target.z);
+}
+
+TEST_F(CameraOrbitTest, WPointsFromTargetToEye) {
+    cam.updateOrbit(target, 0.7, radius, height);
+    Vec3 expected = Vec3::unitVector(cam.eye, target);
+    EXPECT_NEAR(cam.w.x, expected.x, 1e-9);
+    EXPECT_NEAR(cam.w.y, expected.y, 1e-9);
+    EXPECT_NEAR(cam.w.z, expected.z, 1e-9);
+}
+
+TEST_F(CameraOrbitTest, BasisOrthonormal) {
+    cam.updateOrbit(target, 1.1, radius, height);
+    EXPECT_NEAR(cam.u.length(), 1.0, 1e-9);
+    EXPECT_NEAR(cam.v.length(), 1.0, 1e-9);
+    EXPECT_NEAR(cam.w.length(), 1.0, 1e-9);
+    EXPECT_NEAR(cam.u.dot(cam.v), 0.0, 1e-9);
+    EXPECT_NEAR(cam.u.dot(cam.w), 0.0, 1e-9);
+    EXPECT_NEAR(cam.v.dot(cam.w), 0.0, 1e-9);
+}
+
+TEST_F(CameraOrbitTest, VirtualScreenCenterOnViewAxis) {
+    cam.updateOrbit(target, 0.5, radius, height);
+    Vec3 expected = Vec3::ray(cam.eye, cam.w, -50.0);
+    EXPECT_NEAR(cam.virtualScreenCenter.x, expected.x, 1e-6);
+    EXPECT_NEAR(cam.virtualScreenCenter.y, expected.y, 1e-6);
+    EXPECT_NEAR(cam.virtualScreenCenter.z, expected.z, 1e-6);
+}
+
+TEST_F(CameraOrbitTest, ScreenParamsUnchanged) {
+    double ratioOrig = cam.virtualScreenRatio;
+    double hwOrig    = cam.halfWidth;
+    double hhOrig    = cam.halfHeight;
+    cam.updateOrbit(target, 2.0, radius, height);
+    EXPECT_DOUBLE_EQ(cam.virtualScreenRatio, ratioOrig);
+    EXPECT_DOUBLE_EQ(cam.halfWidth,          hwOrig);
+    EXPECT_DOUBLE_EQ(cam.halfHeight,         hhOrig);
+}

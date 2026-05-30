@@ -13,4 +13,5 @@ struct Camera {
     double halfHeight;
 
     void init(int screenWidth, int screenHeight);
+    void updateOrbit(const Vec3& target, double angleRad, double radius, double height);
 };
