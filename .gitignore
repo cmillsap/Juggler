@@ -1,0 +1,16 @@
+# Build outputs
+build/
+
+# Google Test package (downloaded during build)
+packages/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Java class files
+*.class
+
+# Claude Code
+.claude/
