@@ -15,15 +15,30 @@ static void ShowConfigDialog(HWND parent) {
 }
 
 static void RunPreview(HWND previewWnd) {
-    // Preview mode: minimal rendering in the small Settings window
-    // For simplicity, just fill with black
     RECT rc;
     GetClientRect(previewWnd, &rc);
-    HDC hdc = GetDC(previewWnd);
-    HBRUSH brush = CreateSolidBrush(RGB(0, 0, 0));
-    FillRect(hdc, &rc, brush);
-    DeleteObject(brush);
-    ReleaseDC(previewWnd, hdc);
+    uint32_t width  = std::max(1, (int)(rc.right  - rc.left));
+    uint32_t height = std::max(1, (int)(rc.bottom - rc.top));
+
+    Renderer renderer;
+    if (!renderer.init(previewWnd, width, height))
+        return;
+
+    MSG msg = {};
+    bool running = true;
+    while (running && IsWindow(previewWnd)) {
+        while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
+            if (msg.message == WM_QUIT) {
+                running = false;
+                break;
+            }
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
+        }
+        if (running && IsWindow(previewWnd))
+            renderer.render();
+    }
+    renderer.shutdown();
 }
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
@@ -78,15 +93,8 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
             previewWnd = (HWND)(uintptr_t)_wcstoui64(rest.c_str(), nullptr, 10);
         }
 
-        if (previewWnd && IsWindow(previewWnd)) {
+        if (previewWnd && IsWindow(previewWnd))
             RunPreview(previewWnd);
-            // Keep alive briefly for Settings window
-            MSG msg;
-            while (GetMessage(&msg, nullptr, 0, 0)) {
-                TranslateMessage(&msg);
-                DispatchMessage(&msg);
-            }
-        }
         return 0;
     }
 
