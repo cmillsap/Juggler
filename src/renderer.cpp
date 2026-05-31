@@ -116,10 +116,20 @@ void Renderer::createSwapChain(HWND hwnd) {
     desc.BufferCount = FRAME_COUNT;
     desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
 
+    // Retry on E_ACCESSDENIED: DXGI's cross-process swap chain state for this
+    // HWND may not have been released yet if a previous instance was recently
+    // terminated.  Retry for up to ~2 seconds before giving up.
     ComPtr<IDXGISwapChain1> swapChain;
-    ThrowIfFailed(m_factory->CreateSwapChainForHwnd(
-        m_commandQueue.Get(), hwnd, &desc, nullptr, nullptr, &swapChain),
-        "CreateSwapChainForHwnd");
+    HRESULT hr = E_FAIL;
+    for (int attempt = 0; attempt < 20; ++attempt) {
+        hr = m_factory->CreateSwapChainForHwnd(
+            m_commandQueue.Get(), hwnd, &desc, nullptr, nullptr, &swapChain);
+        if (SUCCEEDED(hr)) break;
+        if (hr != HRESULT_FROM_WIN32(ERROR_ACCESS_DENIED)) break;
+        swapChain.Reset();
+        Sleep(100);
+    }
+    ThrowIfFailed(hr, "CreateSwapChainForHwnd");
 
     ThrowIfFailed(m_factory->MakeWindowAssociation(hwnd, DXGI_MWA_NO_ALT_ENTER),
         "MakeWindowAssociation");
