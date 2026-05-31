@@ -1,7 +1,35 @@
 #include <Windows.h>
+#include <TlHelp32.h>
 #include <string>
 #include <algorithm>
 #include "screensaver.h"
+
+// Kill any other running instances of this screensaver so their DXGI swap
+// chains are released before we create our own.  Windows doesn't reliably
+// terminate the /p preview process when launching /s (or vice-versa), which
+// causes CreateSwapChainForHwnd to fail with E_ACCESSDENIED on the same HWND.
+static void KillOtherInstances() {
+    DWORD currentPid = GetCurrentProcessId();
+    HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+    if (snapshot == INVALID_HANDLE_VALUE) return;
+
+    PROCESSENTRY32W pe = { sizeof(pe) };
+    if (Process32FirstW(snapshot, &pe)) {
+        do {
+            if (_wcsicmp(pe.szExeFile, L"Juggler.scr") == 0 &&
+                pe.th32ProcessID != currentPid) {
+                HANDLE proc = OpenProcess(PROCESS_TERMINATE, FALSE, pe.th32ProcessID);
+                if (proc) {
+                    TerminateProcess(proc, 0);
+                    CloseHandle(proc);
+                }
+            }
+        } while (Process32NextW(snapshot, &pe));
+    }
+    CloseHandle(snapshot);
+    // Brief pause for terminated processes to release their D3D/DXGI resources
+    Sleep(200);
+}
 
 static void ShowConfigDialog(HWND parent) {
     MessageBoxW(parent,
@@ -63,6 +91,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
 
     if (arg == L"/s" || arg == L"-s") {
         // Full-screen mode
+        KillOtherInstances();
         ScreenSaver ss;
         if (!ss.init(hInstance)) {
             return 1;
@@ -93,8 +122,10 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, LPWSTR lpCmdLine, int) {
             previewWnd = (HWND)(uintptr_t)_wcstoui64(rest.c_str(), nullptr, 10);
         }
 
-        if (previewWnd && IsWindow(previewWnd))
+        if (previewWnd && IsWindow(previewWnd)) {
+            KillOtherInstances();
             RunPreview(previewWnd);
+        }
         return 0;
     }
 
