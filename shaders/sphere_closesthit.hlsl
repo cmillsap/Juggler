@@ -19,7 +19,7 @@ void SphereClosestHit(inout RayPayload payload : SV_RayPayload,
     GPUMaterialData mat = g_Materials[attr.materialIndex];
 
     // Initialize RNG from hit position
-    uint seed = pcg_hash(asuint(hitPoint.x) ^ pcg_hash(asuint(hitPoint.y) ^ pcg_hash(asuint(hitPoint.z) + frameCount)));
+    uint seed = pcg_hash(asuint(hitPoint.x) ^ pcg_hash(asuint(hitPoint.y) ^ pcg_hash(asuint(hitPoint.z) + frameCount + payload.sampleSeed)));
 
     float3 color = float3(0, 0, 0);
 

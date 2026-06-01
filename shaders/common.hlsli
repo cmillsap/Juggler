@@ -67,6 +67,7 @@ struct RayPayload {
     float3 hitPoint;            // Origin for reflection ray
     float3 reflectionDir;      // Reflection direction
     uint   hasReflection;      // Continue tracing? (0 = no, 1 = yes)
+    uint   sampleSeed;         // Per-sample offset folded into closest-hit RNG seeds
 };
 
 // ------ Procedural Intersection Attributes ------
@@ -102,6 +103,7 @@ static const float EPSILON = 1e-4;
 static const float SHADOW_BIAS = 0.05f;
 static const float PI = 3.14159265358979323846;
 static const int MAX_DEPTH = 10;
+static const uint SAMPLES_PER_PIXEL = 4;
 static const float MIN_COLOR_INTENSITY = 1.0 / 256.0;
 static const float GAMMA = 2.2;
 static const float INV_GAMMA = 1.0 / 2.2;

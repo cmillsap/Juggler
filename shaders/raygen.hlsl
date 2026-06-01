@@ -5,74 +5,84 @@ void RayGen() {
     uint2 launchIndex = DispatchRaysIndex().xy;
     uint2 launchDim = DispatchRaysDimensions().xy;
 
-    // Initialize RNG
-    uint seed = pcg_hash(launchIndex.x + launchIndex.y * launchDim.x + frameCount * launchDim.x * launchDim.y);
+    float3 totalColor = float3(0, 0, 0);
 
-    // Jittered pixel position for anti-aliasing
-    float jitterX = rand(seed);
-    float jitterY = rand(seed);
+    for (uint s = 0; s < SAMPLES_PER_PIXEL; s++) {
+        // Vary seed per sample so each gets independent jitter, AO, and shadow directions
+        uint seed = pcg_hash(launchIndex.x + launchIndex.y * launchDim.x +
+                             (frameCount * SAMPLES_PER_PIXEL + s) * launchDim.x * launchDim.y);
 
-    float px = (float)launchIndex.x + jitterX;
-    float py = (float)launchIndex.y + jitterY;
+        // Jittered pixel position for anti-aliasing
+        float jitterX = rand(seed);
+        float jitterY = rand(seed);
 
-    // Compute ray from camera (matching Java reference)
-    float a = virtualScreenRatio * (px - halfWidth);
-    float b = virtualScreenRatio * (halfHeight - py);
+        float px = (float)launchIndex.x + jitterX;
+        float py = (float)launchIndex.y + jitterY;
 
-    float3 screenPoint = virtualScreenCenter + a * cameraU + b * cameraV;
-    float3 rayDir = normalize(screenPoint - cameraPos);
-    float3 rayOrigin = cameraPos;
+        // Compute ray from camera (matching Java reference)
+        float a = virtualScreenRatio * (px - halfWidth);
+        float b = virtualScreenRatio * (halfHeight - py);
 
-    // Iterative reflection loop
-    float3 pixelColor = float3(0, 0, 0);
-    float3 throughput = float3(1, 1, 1);
+        float3 screenPoint = virtualScreenCenter + a * cameraU + b * cameraV;
+        float3 rayDir = normalize(screenPoint - cameraPos);
+        float3 rayOrigin = cameraPos;
 
-    for (int bounce = 0; bounce < MAX_DEPTH; bounce++) {
-        RayDesc ray;
-        ray.Origin = rayOrigin;
-        ray.Direction = rayDir;
-        ray.TMin = EPSILON;
-        ray.TMax = 1e20;
+        // Iterative reflection loop
+        float3 pixelColor = float3(0, 0, 0);
+        float3 throughput = float3(1, 1, 1);
 
-        RayPayload payload;
-        payload.color = float3(0, 0, 0);
-        payload.reflectionAttenuation = float3(0, 0, 0);
-        payload.hitPoint = float3(0, 0, 0);
-        payload.reflectionDir = float3(0, 0, 0);
-        payload.hasReflection = 0;
+        for (int bounce = 0; bounce < MAX_DEPTH; bounce++) {
+            RayDesc ray;
+            ray.Origin = rayOrigin;
+            ray.Direction = rayDir;
+            ray.TMin = EPSILON;
+            ray.TMax = 1e20;
 
-        TraceRay(g_TLAS,
-            RAY_FLAG_NONE,
-            0xFF,
-            0,      // RayContributionToHitGroupIndex
-            1,      // MultiplierForGeometryContributionToHitGroupIndex
-            0,      // MissShaderIndex
-            ray,
-            payload);
+            RayPayload payload;
+            payload.color = float3(0, 0, 0);
+            payload.reflectionAttenuation = float3(0, 0, 0);
+            payload.hitPoint = float3(0, 0, 0);
+            payload.reflectionDir = float3(0, 0, 0);
+            payload.hasReflection = 0;
+            payload.sampleSeed = s * 1664525u;
 
-        pixelColor += throughput * payload.color;
+            TraceRay(g_TLAS,
+                RAY_FLAG_NONE,
+                0xFF,
+                0,      // RayContributionToHitGroupIndex
+                1,      // MultiplierForGeometryContributionToHitGroupIndex
+                0,      // MissShaderIndex
+                ray,
+                payload);
 
-        if (payload.hasReflection == 0)
-            break;
+            pixelColor += throughput * payload.color;
 
-        // Update for next bounce
-        throughput *= payload.reflectionAttenuation;
+            if (payload.hasReflection == 0)
+                break;
 
-        // Early out if contribution too small
-        if (max(max(throughput.x, throughput.y), throughput.z) < MIN_COLOR_INTENSITY)
-            break;
+            // Update for next bounce
+            throughput *= payload.reflectionAttenuation;
 
-        rayOrigin = payload.hitPoint;
-        rayDir = payload.reflectionDir;
+            // Early out if contribution too small
+            if (max(max(throughput.x, throughput.y), throughput.z) < MIN_COLOR_INTENSITY)
+                break;
+
+            rayOrigin = payload.hitPoint;
+            rayDir = payload.reflectionDir;
+        }
+
+        totalColor += pixelColor;
     }
+
+    float3 frameColor = totalColor / float(SAMPLES_PER_PIXEL);
 
     // Accumulate
     float4 prevAccum = g_Accum[launchIndex];
     float4 newAccum;
     if (accumulatedFrames <= 1) {
-        newAccum = float4(pixelColor, 1.0);
+        newAccum = float4(frameColor, 1.0);
     } else {
-        newAccum = prevAccum + float4(pixelColor, 1.0);
+        newAccum = prevAccum + float4(frameColor, 1.0);
     }
     g_Accum[launchIndex] = newAccum;
 
