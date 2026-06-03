@@ -68,5 +68,14 @@ void GroundClosestHit(inout RayPayload payload : SV_RayPayload,
     }
 
     payload.color = color;
-    payload.hasReflection = 0; // Ground is matte
+
+    // --- Reflection ---
+    if (mat.reflectionWeight > 0) {
+        payload.hasReflection = 1;
+        payload.reflectionAttenuation = mat.reflectionWeight * mat.reflectionColor;
+        payload.reflectionDir = reflect(rayDir, normal);
+        payload.hitPoint = offsetOrigin;
+    } else {
+        payload.hasReflection = 0;
+    }
 }
