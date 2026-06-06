@@ -85,9 +85,9 @@ TEST(GroundIntersection, CheckerboardOrigin) {
 }
 
 TEST(GroundIntersection, CheckerboardOffset) {
-    // Point directly above (107, 0, 0)
-    // floor(107/107) = 1, floor(0/107) = 0 -> (1 & 1) ^ (0 & 1) = 1
-    Vec3 origin(107, 10, 0);
+    // Point above (107.5, 0, 0) — center of the adjacent square to avoid the exact boundary
+    // floor(107.5/107) = 1, floor(0/107) = 0 -> ((1+0)&1) != 0 -> yellow
+    Vec3 origin(107.5, 10, 0);
     Vec3 dir(0, -1, 0);
 
     auto result = intersectGround(origin, dir);

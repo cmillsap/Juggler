@@ -71,9 +71,9 @@ TEST_F(SceneTest, MirrorMaterialIsReflective) {
     EXPECT_DOUBLE_EQ(mat.ambientWeight, 0.0);
 }
 
-TEST_F(SceneTest, MatteIsNotReflective) {
+TEST_F(SceneTest, MatteGroundReflectivity) {
     const auto& yellow = scene.materials[MAT_YELLOW_MATTE];
-    EXPECT_DOUBLE_EQ(yellow.reflectionWeight, 0.0);
+    EXPECT_DOUBLE_EQ(yellow.reflectionWeight, 0.15);
     EXPECT_DOUBLE_EQ(yellow.specularWeight, 0.0);
     EXPECT_GT(yellow.diffuseWeight, 0.0);
 }

@@ -41,7 +41,7 @@ Each call to `Renderer::render()` does the following in sequence:
 2. Rebuilds the BLAS and TLAS from scratch each frame (procedural AABBs, one per sphere)
 3. Uploads updated sphere center/radius data to a GPU structured buffer
 4. Updates the per-frame constant buffer (`PerFrameConstants`) with camera, light, and frame state
-5. Dispatches rays (one per pixel, up to `MAX_DEPTH=10` bounces for reflections)
+5. Dispatches rays (4 samples per pixel via `SAMPLES_PER_PIXEL=4` in `common.hlsli`, each with per-sample jitter for anti-aliasing, AO, and shadow sampling; up to `MAX_DEPTH=10` bounces per sample for reflections)
 6. Accumulates into `g_Accum` (a float32 texture) for temporal averaging; this resets when the animation frame integer changes
 
 ### Geometry representation
@@ -62,7 +62,7 @@ Six HLSL shaders, all compiled from `lib_6_5` at startup by `DXRPipeline::init()
 | `sphere_intersection.hlsl` | Quadratic sphere test, computes outward normal, assigns material index |
 | `sphere_closesthit.hlsl` | Ambient/AO, diffuse, specular, reflection payload for spheres |
 | `ground_intersection.hlsl` | Ray-plane test at y=0, checkerboard material selection |
-| `ground_closesthit.hlsl` | Same lighting model as sphere, no reflection |
+| `ground_closesthit.hlsl` | Same lighting model as sphere; supports reflection (ground has `reflectionWeight=0.15`) |
 | `miss.hlsl` | Sky gradient based on ray Y direction |
 
 Shadow and AO tests use **inline `RayQuery`** inside the closest-hit shaders (not recursive `TraceRay`). Self-intersection is prevented by offsetting secondary ray origins by `SHADOW_BIAS = 0.05f` along the surface normal — removing this causes visible dark bands on spheres.

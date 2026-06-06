@@ -79,7 +79,7 @@ TEST_F(MaterialsTest, MatteProperties) {
     EXPECT_NEAR(yellow.ambientWeight, 0.13320851318429970, 1e-12);
     EXPECT_DOUBLE_EQ(yellow.diffuseWeight, 1.5);
     EXPECT_DOUBLE_EQ(yellow.specularWeight, 0.0);
-    EXPECT_DOUBLE_EQ(yellow.reflectionWeight, 0.0);
+    EXPECT_DOUBLE_EQ(yellow.reflectionWeight, 0.15);
 }
 
 TEST_F(MaterialsTest, MirrorProperties) {
