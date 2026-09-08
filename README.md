@@ -11,12 +11,17 @@ Recreates the iconic 1985 Amiga Juggler demo as a Windows screen saver (.scr) us
 
 ## Installation
 
-1. Download `Juggler-v1.0.0.zip` from the [latest release](../../releases/latest) and extract it to a permanent folder (e.g. `C:\Program Files\Juggler\`).
-2. All files must stay together: `Juggler.scr`, `dxcompiler.dll`, `dxil.dll`, and the `shaders\` folder.
+Use `install.ps1`. It copies the screen saver to `%LOCALAPPDATA%\Juggler` and selects it in Windows Screen Saver Settings — no elevation, nothing written outside your own profile, and nothing dropped into `System32`.
 
-**To register with Windows Screen Saver Settings:**
+```powershell
+.\install.ps1                    # install and make it the active screen saver
+.\install.ps1 -Activate:$false   # install without selecting it
+.\install.ps1 -Uninstall         # remove it again
+```
 
-Copy all extracted files into `C:\Windows\System32\`, then open *Settings → Personalization → Lock screen → Screen saver* and select **Juggler**.
+Run it either from a source tree after building (it picks up `build\Release\`, or pass `-Configuration Debug`), or from a folder where you extracted the [latest release](../../releases/latest) zip with `install.ps1` alongside it.
+
+All files must stay together: `Juggler.scr`, `dxcompiler.dll`, `dxil.dll`, and the `shaders\` folder. The shaders are compiled at startup, not baked into the binary.
 
 **To run directly (no installation):**
 

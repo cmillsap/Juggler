@@ -42,7 +42,7 @@ Each call to `Renderer::render()` does the following in sequence:
 3. Uploads updated sphere center/radius data to a GPU structured buffer
 4. Updates the per-frame constant buffer (`PerFrameConstants`) with camera, light, and frame state
 5. Dispatches rays (4 samples per pixel via `SAMPLES_PER_PIXEL=4` in `common.hlsli`, each with per-sample jitter for anti-aliasing, AO, and shadow sampling; up to `MAX_DEPTH=10` bounces per sample for reflections)
-6. Accumulates into `g_Accum` (a float32 texture) for temporal averaging; this resets when the animation frame integer changes
+6. Writes results to `g_Accum` (a float32 texture); temporal accumulation is reset every frame by the orbiting camera, so `accumulatedFrames` is always 1 and the `g_Accum` path in `raygen.hlsl` always overwrites rather than averages
 
 ### Geometry representation
 
@@ -69,7 +69,7 @@ Shadow and AO tests use **inline `RayQuery`** inside the closest-hit shaders (no
 
 ### Camera
 
-`Camera::init()` sets a fixed eye/look and builds an orthonormal basis (u, v, w) via `Vec3::onb()`. Rays are generated from a virtual screen plane at `DISTANCE_TO_VIRTUAL_SCREEN = 50` units in front of the eye. Camera state is uploaded to the GPU each frame via `PerFrameConstants`.
+`Camera::init()` sets up screen geometry (`DISTANCE_TO_VIRTUAL_SCREEN = 50`, virtual screen ratio, half-dimensions) with a default eye/look that is immediately overridden each frame. Each call to `render()` invokes `Camera::updateOrbit()`, which orbits the eye around the juggler center `{151, 100, -151}` at `ORBIT_RADIUS = 350` world units and `ORBIT_HEIGHT = 130`, rotating at `ORBIT_SPEED = 0.4` rad/s (~15 s per full orbit), then rebuilds the ONB (u, v, w) via `Vec3::onb()`. Camera state is uploaded to the GPU each frame via `PerFrameConstants`.
 
 ### Animation
 
