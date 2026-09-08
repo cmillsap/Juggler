@@ -19,7 +19,7 @@ Use `install.ps1`. It copies the screen saver to `%LOCALAPPDATA%\Juggler` and se
 .\install.ps1 -Uninstall         # remove it again
 ```
 
-Run it either from a source tree after building (it picks up `build\Release\`, or pass `-Configuration Debug`), or from a folder where you extracted the [latest release](../../releases/latest) zip with `install.ps1` alongside it.
+Run it either from a source tree after building (it picks up `build\Release\`, or pass `-Configuration Debug`), or from the folder where you extracted the [latest release](../../releases/latest) zip — the script ships inside it.
 
 All files must stay together: `Juggler.scr`, `dxcompiler.dll`, `dxil.dll`, and the `shaders\` folder. The shaders are compiled at startup, not baked into the binary.
 
